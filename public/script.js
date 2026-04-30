@@ -1,6 +1,5 @@
 (function () {
-
-//  State
+    //  State
   const state = {
     feeds: [],
     userFeedIndex: 0,
@@ -14,8 +13,24 @@
     loading: false,
   };
 
+    //  localStorage helpers
+  const STORAGE_KEY = "echo-grid-tags";
 
-//  DOM references
+  function saveTagsToStorage() {
+    const tags = Array.from(state.activeTags);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tags));
+  }
+
+  function loadTagsFromStorage() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+    //  DOM references
   const $ = (sel) => document.querySelector(sel);
   const dom = {
     app: $("#app"),
@@ -32,8 +47,7 @@
     activityDot: $("#activity-dot"),
   };
 
-
-//  Initialisation
+    //  Initialisation
   function init() {
     parseConfig();
     if (state.feeds.length === 0) {
@@ -51,15 +65,21 @@
       dom.modeTabs.classList.remove("hidden");
     }
 
+    // Load tags from URL or localStorage
     const urlFilter = new URLSearchParams(window.location.search).get("filter");
     if (urlFilter) {
       urlFilter.split(",").forEach((tag) => {
         const trimmed = tag.trim().toLowerCase();
         if (trimmed) state.activeTags.add(trimmed);
       });
+      saveTagsToStorage();
+    } else {
+      const savedTags = loadTagsFromStorage();
+      savedTags.forEach((tag) => state.activeTags.add(tag));
     }
     renderTagChips();
 
+    // Event listeners
     dom.tabMy.addEventListener("click", () => switchMode("my"));
     dom.tabCommunity.addEventListener("click", () => switchMode("community"));
     dom.filterInput.addEventListener("input", debounce(onFilterInput, 250));
@@ -79,7 +99,7 @@
     fetchAllFeeds();
   }
 
-//  Configuration parsing
+  //  Configuration parsing
   function parseConfig() {
     const params = new URLSearchParams(window.location.search);
     const feed = params.get("feed");
@@ -106,7 +126,7 @@
     }
   }
 
- //  Fetch logic
+  //  Fetch logic
   async function fetchAllFeeds() {
     setLoading(true);
     state.allTweets = [];
@@ -137,33 +157,32 @@
     setLoading(false);
   }
 
-//  Filtering & Mode
+  //  Filtering & Mode
   function applyFilterAndPaginate() {
     let tweets = [...state.allTweets];
 
-  if (state.activeMode === "my") {
-    tweets = tweets.filter((t) => t.sourceFeed === state.userFeedIndex);
+    if (state.activeMode === "my") {
+      tweets = tweets.filter((t) => t.sourceFeed === state.userFeedIndex);
+    }
+
+    if (state.activeTags.size > 0) {
+      tweets = tweets.filter((t) => {
+        const lower = t.text.toLowerCase();
+        return Array.from(state.activeTags).some((tag) => lower.includes(tag));
+      });
+    }
+
+    if (state.activeFilterText.trim()) {
+      const query = state.activeFilterText.trim().toLowerCase();
+      tweets = tweets.filter((t) => t.text.toLowerCase().includes(query));
+    }
+
+    state.filteredTweets = tweets;
+    state.currentPage = 1;
+
+    updateURL();
+    renderView();
   }
-
-  if (state.activeTags.size > 0) {
-    tweets = tweets.filter((t) => {
-      const lower = t.text.toLowerCase();
-      return Array.from(state.activeTags).some((tag) => lower.includes(tag));
-    });
-  }
-
-  if (state.activeFilterText.trim()) {
-    const query = state.activeFilterText.trim().toLowerCase();
-    tweets = tweets.filter((t) => t.text.toLowerCase().includes(query));
-  }
-
-  state.filteredTweets = tweets;
-  state.currentPage = 1;
-
-  updateURL();
-
-  renderView();
-}
 
   function onFilterInput(e) {
     state.activeFilterText = e.target.value;
@@ -196,7 +215,7 @@
     }
   }
 
-//  Tag chips rendering
+  //  Tag chips rendering
   function renderTagChips() {
     dom.tagChips.innerHTML = "";
     state.activeTags.forEach((tag) => {
@@ -216,9 +235,10 @@
       });
       dom.tagChips.appendChild(chip);
     });
+    saveTagsToStorage();
   }
 
-//  Pagination & rendering
+  //  Pagination & rendering
   function renderView() {
     const total = state.filteredTweets.length;
     const totalPages = Math.ceil(total / state.tweetsPerPage);
@@ -230,13 +250,19 @@
 
     dom.tweetList.innerHTML = "";
     if (pageTweets.length === 0) {
-      dom.tweetList.innerHTML =
-        '<div style="text-align:center;padding:20px;">No tweets found</div>';
+      dom.tweetList.innerHTML = `<div style="text-align:center;padding:20px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5">
+            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <p>No tweets found</p>
+        </div>`;
     } else {
       pageTweets.forEach((tweet) =>
         dom.tweetList.appendChild(createTweetCard(tweet)),
       );
     }
+
+    dom.tweetList.scrollTop = 0; // reset scroll position
 
     renderPagination(totalPages);
 
@@ -249,6 +275,7 @@
 
   function renderPagination(totalPages) {
     dom.pagination.innerHTML = "";
+
     const prev = document.createElement("button");
     prev.className = "page-btn";
     prev.textContent = "‹ Prev";
@@ -260,6 +287,12 @@
       }
     });
     dom.pagination.appendChild(prev);
+
+    // Page indicator
+    const indicator = document.createElement("span");
+    indicator.className = "page-indicator";
+    indicator.textContent = `Page ${state.currentPage} of ${totalPages}`;
+    dom.pagination.appendChild(indicator);
 
     const maxVisible = 5;
     let startPage = Math.max(1, state.currentPage - Math.floor(maxVisible / 2));
@@ -293,7 +326,7 @@
     dom.pagination.appendChild(next);
   }
 
-//  Tweet card creation
+  //  Tweet card creation
   function createTweetCard(tweet) {
     const card = document.createElement("div");
     card.className = "tweet-card";
@@ -306,7 +339,13 @@
     avatar.src = tweet.avatarUrl || "";
     avatar.alt = tweet.authorHandle;
     avatar.onerror = () => {
-      avatar.src = "";
+      avatar.style.display = "none";
+      const fallback = document.createElement("div");
+      fallback.className = "tweet-avatar fallback-avatar";
+      fallback.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" opacity="0.5">
+        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2h19.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z"/>
+      </svg>`;
+      avatar.parentNode.insertBefore(fallback, avatar);
     };
     author.appendChild(avatar);
 
@@ -358,7 +397,7 @@
     return card;
   }
 
-//  Relative time helper
+    //  Relative time helper
   function relativeTime(isoString) {
     const now = new Date();
     const then = new Date(isoString);
@@ -373,7 +412,7 @@
     return then.toLocaleDateString();
   }
 
-//  Activity dot
+    //  Activity dot
   function checkActivity() {
     if (state.feeds.length === 0) return;
     const ownerTweets = state.allTweets.filter(
@@ -389,14 +428,32 @@
     }
   }
 
-//  Theme detection
+    //  Theme detection
   function applyTheme() {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     dom.app.classList.toggle("dark-mode", isDark);
     dom.app.classList.toggle("light-mode", !isDark);
   }
 
-//  Loading & Error UI
+    //  URL sync
+  function updateURL() {
+    const params = new URLSearchParams();
+    if (state.feeds.length === 1) {
+      params.set("feed", state.feeds[0]);
+    } else if (state.feeds.length > 1) {
+      params.set("feeds", state.feeds.join(","));
+    }
+    if (state.feeds.length > 1 && state.activeMode === "community") {
+      params.set("mode", "multi");
+    }
+    if (state.activeTags.size > 0) {
+      params.set("filter", Array.from(state.activeTags).join(","));
+    }
+    const newUrl = window.location.pathname + "?" + params.toString();
+    window.history.replaceState(null, "", newUrl);
+  }
+
+    //  Loading & Error UI
   function setLoading(loading) {
     state.loading = loading;
     dom.loading.classList.toggle("hidden", !loading);
@@ -409,7 +466,7 @@
     dom.error.classList.remove("hidden");
   }
 
-//  Debounce utility
+    //  Debounce utility
   function debounce(fn, delay) {
     let timer;
     return function (...args) {
@@ -418,30 +475,6 @@
     };
   }
 
-  function updateURL() {
-    const params = new URLSearchParams();
-
-    // Always include feed/feeds
-    if (state.feeds.length === 1) {
-      params.set("feed", state.feeds[0]);
-    } else if (state.feeds.length > 1) {
-      params.set("feeds", state.feeds.join(","));
-    }
-
-    // Mode
-    if (state.feeds.length > 1 && state.activeMode === "community") {
-      params.set("mode", "multi");
-    }
-
-    // Active tags
-    if (state.activeTags.size > 0) {
-      params.set("filter", Array.from(state.activeTags).join(","));
-    }
-
-    const newUrl = window.location.pathname + "?" + params.toString();
-    window.history.replaceState(null, "", newUrl);
-  }
-
-//  Start
+    //  Start
   window.addEventListener("DOMContentLoaded", init);
 })();

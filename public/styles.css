@@ -1,4 +1,4 @@
- /* (Dark Mode by Default) */
+/* Dark Mode by Default */
 :root {
   --bg-primary: #0f1419;
   --bg-secondary: #1a1f26;
@@ -18,7 +18,7 @@
   --transition-speed: 0.2s;
 }
 
-/* Light mode override */
+/* Light mode */
 @media (prefers-color-scheme: light) {
   :root {
     --bg-primary: #ffffff;
@@ -275,6 +275,14 @@ body {
   border: 1px solid var(--border-color);
 }
 
+.fallback-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
 .tweet-author-info {
   display: flex;
   flex-wrap: wrap;
@@ -377,6 +385,13 @@ body {
   cursor: not-allowed;
 }
 
+.page-indicator {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0 6px;
+  white-space: nowrap;
+}
+
 #loading-indicator {
   display: flex;
   flex-direction: column;
@@ -409,18 +424,6 @@ body {
   background: var(--bg-card);
   border-radius: 12px;
   margin: 10px 0;
-}
-
-/* ===== Empty / No tweets found ===== */
-#tweet-list > div {
-  text-align: center;
-  padding: 30px 20px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
 }
 
 .hidden {
