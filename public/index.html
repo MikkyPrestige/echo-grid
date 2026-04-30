@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Echo Grid</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app" class="dark-mode">
+      <div id="header">
+        <span class="app-name"
+          >Echo
+          <span id="activity-dot" class="hidden" title="Active today"></span
+        ></span>
+        <span class="app-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
+            />
+          </svg>
+        </span>
+      </div>
+
+      <!-- hidden when only one feed -->
+      <div id="mode-tabs" class="hidden">
+        <button id="tab-my" class="tab active">My Feed</button>
+        <button id="tab-community" class="tab">Community</button>
+      </div>
+
+      <div id="filter-bar">
+        <input
+          type="text"
+          id="filter-input"
+          placeholder="Filter tweets..."
+          autocomplete="off"
+        />
+        <button id="add-filter-btn" title="Add filter tag">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <div id="tag-chips"></div>
+      </div>
+
+      <div id="tweet-list"></div>
+
+      <div id="pagination" class="hidden"></div>
+
+      <div id="loading-indicator" class="hidden">
+        <div class="spinner"></div>
+        <span>Loading tweets…</span>
+      </div>
+
+      <div id="error-message" class="hidden"></div>
+
+      <!-- shown in header when active -->
+      <div id="activity-dot" class="hidden" title="Active today"></div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
