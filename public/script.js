@@ -1,5 +1,5 @@
 (function () {
-    //  State
+  //  State
   const state = {
     feeds: [],
     userFeedIndex: 0,
@@ -13,7 +13,7 @@
     loading: false,
   };
 
-    //  localStorage helpers
+  //  localStorage helpers
   const STORAGE_KEY = "echo-grid-tags";
 
   function saveTagsToStorage() {
@@ -30,7 +30,7 @@
     }
   }
 
-    //  DOM references
+  //  DOM references
   const $ = (sel) => document.querySelector(sel);
   const dom = {
     app: $("#app"),
@@ -47,7 +47,7 @@
     activityDot: $("#activity-dot"),
   };
 
-    //  Initialisation
+  //  Initialisation
   function init() {
     parseConfig();
     if (state.feeds.length === 0) {
@@ -106,6 +106,17 @@
     const feeds = params.get("feeds");
     const mode = params.get("mode");
 
+    // 1. Check for a username in the path
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    if (pathParts.length === 1 && !feed && !feeds) {
+      const username = pathParts[0];
+      // Build the RSSHub URL directly
+      const rsshubBase = "https://rss-hub-orcin-one.vercel.app/twitter/user/";
+      state.feeds = [rsshubBase + username];
+      return;
+    }
+
+    // 2. Fall back to query parameters
     if (feeds) {
       state.feeds = feeds
         .split(",")
@@ -117,6 +128,7 @@
       state.feeds = [];
     }
 
+    // Determine active mode
     if (state.feeds.length === 1) {
       state.activeMode = "my";
     } else if (mode === "multi" || mode === "community") {
@@ -397,7 +409,7 @@
     return card;
   }
 
-    //  Relative time helper
+  //  Relative time helper
   function relativeTime(isoString) {
     const now = new Date();
     const then = new Date(isoString);
@@ -412,7 +424,7 @@
     return then.toLocaleDateString();
   }
 
-    //  Activity dot
+  //  Activity dot
   function checkActivity() {
     if (state.feeds.length === 0) return;
     const ownerTweets = state.allTweets.filter(
@@ -428,14 +440,14 @@
     }
   }
 
-    //  Theme detection
+  //  Theme detection
   function applyTheme() {
     const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     dom.app.classList.toggle("dark-mode", isDark);
     dom.app.classList.toggle("light-mode", !isDark);
   }
 
-    //  URL sync
+  //  URL sync
   function updateURL() {
     const params = new URLSearchParams();
     if (state.feeds.length === 1) {
@@ -453,7 +465,7 @@
     window.history.replaceState(null, "", newUrl);
   }
 
-    //  Loading & Error UI
+  //  Loading & Error UI
   function setLoading(loading) {
     state.loading = loading;
     dom.loading.classList.toggle("hidden", !loading);
@@ -466,7 +478,7 @@
     dom.error.classList.remove("hidden");
   }
 
-    //  Debounce utility
+  //  Debounce utility
   function debounce(fn, delay) {
     let timer;
     return function (...args) {
@@ -475,6 +487,6 @@
     };
   }
 
-    //  Start
+  //  Start
   window.addEventListener("DOMContentLoaded", init);
 })();
