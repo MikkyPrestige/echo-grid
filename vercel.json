@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/:username",
+      "destination": "/?feed=https://rss-hub-orcin-one.vercel.app/twitter/user/:username"
+    }
+  ]
+}
